@@ -144,19 +144,51 @@ func Merge(a, b map[string]any) {
 	}
 }
 
+// StrictMergeError is returned by MergeStrict and MergeStrictWithDelim
+// when the same key holds values of different types in the two maps.
+type StrictMergeError struct {
+	// Key is the full delimited path to the conflicting key, including
+	// the leaf key itself.
+	Key string
+
+	// Existing is the value already present in the target map.
+	Existing any
+
+	// Incoming is the conflicting value from the source map.
+	Incoming any
+}
+
+// Error implements the error interface.
+func (e *StrictMergeError) Error() string {
+	return fmt.Sprintf("incorrect types at key %v, type %T != %T", e.Key, e.Existing, e.Incoming)
+}
+
 // MergeStrict recursively merges map a into b (left to right), mutating
 // and expanding map b. Note that there's no copying involved, so
 // map b will retain references to map a.
 // If an equal key in either of the maps has a different value type, it will return the first error.
 //
+// Key paths in the returned *StrictMergeError are joined with a literal ".".
+//
 // It's important to note that all nested maps should be
 // map[string]any and not map[any]any.
 // Use IntfaceKeysToStrings() to convert if necessary.
 func MergeStrict(a, b map[string]any) error {
-	return mergeStrict(a, b, "")
+	return mergeStrict(a, b, "", ".")
 }
 
-func mergeStrict(a, b map[string]any, fullKey string) error {
+// MergeStrictWithDelim behaves like MergeStrict but joins the key paths in
+// the returned error with delim, so callers using a different koanf
+// delimiter (for example, "/") receive key paths they can locate in their
+// own flattened config. An empty delim falls back to ".".
+func MergeStrictWithDelim(a, b map[string]any, delim string) error {
+	if delim == "" {
+		delim = "."
+	}
+	return mergeStrict(a, b, "", delim)
+}
+
+func mergeStrict(a, b map[string]any, fullKey, delim string) error {
 	for key, val := range a {
 		// Does the key exist in the target map?
 		// If no, add it and move on.
@@ -168,7 +200,7 @@ func mergeStrict(a, b map[string]any, fullKey string) error {
 
 		newFullKey := key
 		if fullKey != "" {
-			newFullKey = fmt.Sprintf("%v.%v", fullKey, key)
+			newFullKey = fmt.Sprintf("%v%v%v", fullKey, delim, key)
 		}
 
 		// If the incoming val is not a map, do a direct merge between the same types.
@@ -176,7 +208,7 @@ func mergeStrict(a, b map[string]any, fullKey string) error {
 			if reflect.TypeOf(b[key]) == reflect.TypeOf(val) {
 				b[key] = val
 			} else {
-				return fmt.Errorf("incorrect types at key %v, type %T != %T", newFullKey, b[key], val)
+				return &StrictMergeError{Key: newFullKey, Existing: b[key], Incoming: val}
 			}
 			continue
 		}
@@ -184,13 +216,13 @@ func mergeStrict(a, b map[string]any, fullKey string) error {
 		// The source key and target keys are both maps. Merge them.
 		switch v := bVal.(type) {
 		case map[string]any:
-			if err := mergeStrict(val.(map[string]any), v, newFullKey); err != nil {
+			if err := mergeStrict(val.(map[string]any), v, newFullKey, delim); err != nil {
 				return err
 			}
 		default:
 			// The incoming value is a map but the target value is not,
 			// which is a type mismatch.
-			return fmt.Errorf("incorrect types at key %v, type %T != %T", newFullKey, b[key], val)
+			return &StrictMergeError{Key: newFullKey, Existing: b[key], Incoming: val}
 		}
 	}
 	return nil

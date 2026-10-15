@@ -3,6 +3,9 @@ package json
 
 import (
 	"encoding/json"
+	"fmt"
+
+	"github.com/knadh/koanf/v2"
 )
 
 // JSON implements a JSON parser.
@@ -20,6 +23,15 @@ func (p *JSON) Unmarshal(b []byte) (map[string]any, error) {
 		return nil, err
 	}
 	return out, nil
+}
+
+// SupportsMultiDoc declares that a JSON input always contains a single
+// document. Multiple JSON values in one input are not supported.
+func (p *JSON) SupportsMultiDoc() bool { return false }
+
+// UnmarshalDocs is not supported by the JSON parser.
+func (p *JSON) UnmarshalDocs(b []byte) ([]koanf.DocFragment, error) {
+	return nil, fmt.Errorf("json: %w", koanf.ErrMultiDocNotSupported)
 }
 
 // Marshal marshals the given config map to JSON bytes.

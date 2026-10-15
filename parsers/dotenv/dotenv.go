@@ -7,6 +7,7 @@ import (
 
 	"github.com/joho/godotenv"
 	"github.com/knadh/koanf/maps"
+	"github.com/knadh/koanf/v2"
 )
 
 // DotEnv implements a DOTENV parser.
@@ -83,6 +84,15 @@ func (p *DotEnv) Unmarshal(b []byte) (map[string]any, error) {
 		mp = maps.Unflatten(mp, p.delim)
 	}
 	return mp, nil
+}
+
+// SupportsMultiDoc declares that a DOTENV input always contains a single
+// document. dotenv has no multi-document representation.
+func (p *DotEnv) SupportsMultiDoc() bool { return false }
+
+// UnmarshalDocs is not supported by the DOTENV parser.
+func (p *DotEnv) UnmarshalDocs(b []byte) ([]koanf.DocFragment, error) {
+	return nil, fmt.Errorf("dotenv: %w", koanf.ErrMultiDocNotSupported)
 }
 
 // Marshal marshals the given config map to DOTENV bytes.

@@ -2,12 +2,22 @@ package dotenv
 
 import (
 	"encoding/json"
+	"errors"
 	"strings"
 	"testing"
 
+	"github.com/knadh/koanf/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+func TestDotEnv_MultiDocUnsupported(t *testing.T) {
+	for _, p := range []*DotEnv{Parser(), ParserEnv("", "", nil), ParserEnvWithValue("", "", nil)} {
+		assert.False(t, p.SupportsMultiDoc())
+		_, err := p.UnmarshalDocs([]byte(`KEY=val`))
+		assert.True(t, errors.Is(err, koanf.ErrMultiDocNotSupported))
+	}
+}
 
 func TestDotEnv_Marshal(t *testing.T) {
 	de := DotEnv{}

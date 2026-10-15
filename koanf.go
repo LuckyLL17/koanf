@@ -100,6 +100,7 @@ func (ko *Koanf) Load(p Provider, pa Parser, opts ...Option) error {
 	if p == nil {
 		return fmt.Errorf("load received a nil provider")
 	}
+	o := newOptions(opts)
 
 	// No Parser is given. Call the Provider's Read() method to get
 	// the config map.
@@ -108,19 +109,41 @@ func (ko *Koanf) Load(p Provider, pa Parser, opts ...Option) error {
 		if err != nil {
 			return err
 		}
-	} else {
-		// There's a Parser. Get raw bytes from the Provider to parse.
-		b, err := p.ReadBytes()
-		if err != nil {
-			return err
-		}
-		mp, err = pa.Unmarshal(b)
-		if err != nil {
-			return err
-		}
+		return ko.merge(mp, o)
 	}
 
-	return ko.merge(mp, newOptions(opts))
+	// There's a Parser. Get raw bytes from the Provider to parse.
+	// A failure here (for example, a cancelled input) returns before any
+	// config state is touched.
+	b, err := p.ReadBytes()
+	if err != nil {
+		return err
+	}
+
+	// A parser that explicitly supports multiple documents in one input
+	// returns ordered fragments. Merge them in order and commit atomically.
+	if md, ok := pa.(MultiDocParser); ok && md.SupportsMultiDoc() {
+		docs, err := md.UnmarshalDocs(b)
+		if err != nil {
+			return err
+		}
+
+		// Zero or one document: take the single-document path so the
+		// behaviour and error shape stay identical to a plain Unmarshal.
+		if len(docs) == 0 {
+			return nil
+		} else if len(docs) == 1 {
+			return ko.merge(docs[0].Config, o)
+		}
+
+		return ko.mergeDocuments(docs, o)
+	}
+
+	mp, err = pa.Unmarshal(b)
+	if err != nil {
+		return err
+	}
+	return ko.merge(mp, o)
 }
 
 // Keys returns the slice of all flattened keys in the loaded configuration

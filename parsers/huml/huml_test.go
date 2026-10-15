@@ -1,10 +1,19 @@
 package huml
 
 import (
+	"errors"
 	"testing"
 
+	"github.com/knadh/koanf/v2"
 	"github.com/stretchr/testify/assert"
 )
+
+func TestHUML_MultiDocUnsupported(t *testing.T) {
+	p := Parser()
+	assert.False(t, p.SupportsMultiDoc())
+	_, err := p.UnmarshalDocs([]byte(`name: "test"`))
+	assert.True(t, errors.Is(err, koanf.ErrMultiDocNotSupported))
+}
 
 func TestHUML_Unmarshal(t *testing.T) {
 	testCases := []struct {

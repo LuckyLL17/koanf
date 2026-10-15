@@ -5,11 +5,13 @@ go 1.23.0
 require (
 	github.com/joho/godotenv v1.5.1
 	github.com/knadh/koanf/maps v0.1.2
+	github.com/knadh/koanf/v2 v2.3.8
 	github.com/stretchr/testify v1.8.4
 )
 
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
+	github.com/go-viper/mapstructure/v2 v2.4.0 // indirect
 	github.com/kr/pretty v0.2.1 // indirect
 	github.com/kr/text v0.2.0 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect

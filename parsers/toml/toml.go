@@ -2,6 +2,9 @@
 package toml
 
 import (
+	"fmt"
+
+	"github.com/knadh/koanf/v2"
 	"github.com/pelletier/go-toml/v2"
 )
 
@@ -26,6 +29,15 @@ func (p *TOML) Unmarshal(b []byte) (map[string]any, error) {
 	}
 
 	return outMap, nil
+}
+
+// SupportsMultiDoc declares that a TOML input always contains a single
+// document. TOML has no multi-document representation.
+func (p *TOML) SupportsMultiDoc() bool { return false }
+
+// UnmarshalDocs is not supported by the TOML parser.
+func (p *TOML) UnmarshalDocs(b []byte) ([]koanf.DocFragment, error) {
+	return nil, fmt.Errorf("toml: %w", koanf.ErrMultiDocNotSupported)
 }
 
 // Marshal marshals the given config map to TOML bytes.

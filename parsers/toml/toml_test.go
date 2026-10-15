@@ -1,10 +1,19 @@
 package toml
 
 import (
+	"errors"
 	"testing"
 
+	"github.com/knadh/koanf/v2"
 	"github.com/stretchr/testify/assert"
 )
+
+func TestTOML_MultiDocUnsupported(t *testing.T) {
+	p := Parser()
+	assert.False(t, p.SupportsMultiDoc())
+	_, err := p.UnmarshalDocs([]byte(`key = "val"`))
+	assert.True(t, errors.Is(err, koanf.ErrMultiDocNotSupported))
+}
 
 func TestTOML_Unmarshal(t *testing.T) {
 	testCases := []struct {

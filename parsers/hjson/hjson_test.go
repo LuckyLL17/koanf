@@ -1,9 +1,19 @@
 package hjson
 
 import (
+	"errors"
 	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/knadh/koanf/v2"
 )
+
+func TestHJSON_MultiDocUnsupported(t *testing.T) {
+	p := Parser()
+	assert.False(t, p.SupportsMultiDoc())
+	_, err := p.UnmarshalDocs([]byte(`{}`))
+	assert.True(t, errors.Is(err, koanf.ErrMultiDocNotSupported))
+}
 
 func TestHJSON_Unmarshal(t *testing.T) {
 	testCases := []struct {

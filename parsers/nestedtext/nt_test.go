@@ -1,10 +1,22 @@
 package nestedtext_test
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/knadh/koanf/parsers/nestedtext"
+	"github.com/knadh/koanf/v2"
 )
+
+func TestParserMultiDocUnsupported(t *testing.T) {
+	p := nestedtext.Parser()
+	if p.SupportsMultiDoc() {
+		t.Fatal("NestedText parser must declare multi-document support as false")
+	}
+	if _, err := p.UnmarshalDocs([]byte("key: value")); !errors.Is(err, koanf.ErrMultiDocNotSupported) {
+		t.Fatalf("expected ErrMultiDocNotSupported, got %v", err)
+	}
+}
 
 func TestParser(t *testing.T) {
 	// test input in NestedText format

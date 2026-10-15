@@ -376,6 +376,37 @@ func TestMergeStrictScalarVsMap(t *testing.T) {
 	}
 }
 
+func TestMergeStrictTypedError(t *testing.T) {
+	err := maps.MergeStrict(
+		map[string]any{"parent": map[string]any{"child": "string"}},
+		map[string]any{"parent": map[string]any{"child": 1}},
+	)
+
+	var sme *maps.StrictMergeError
+	if !assert.ErrorAs(t, err, &sme) {
+		return
+	}
+	assert.Equal(t, "parent.child", sme.Key)
+	assert.Equal(t, 1, sme.Existing)
+	assert.Equal(t, "string", sme.Incoming)
+	// The legacy message format must stay unchanged.
+	assert.Contains(t, err.Error(), "incorrect types at key parent.child, type int != string")
+}
+
+func TestMergeStrictWithDelim(t *testing.T) {
+	err := maps.MergeStrictWithDelim(
+		map[string]any{"parent": map[string]any{"child": "string"}},
+		map[string]any{"parent": map[string]any{"child": 1}},
+		"/",
+	)
+
+	var sme *maps.StrictMergeError
+	if !assert.ErrorAs(t, err, &sme) {
+		return
+	}
+	assert.Equal(t, "parent/child", sme.Key)
+}
+
 func TestMapDelete(t *testing.T) {
 	testMap := map[string]any{
 		"parent": map[string]any{

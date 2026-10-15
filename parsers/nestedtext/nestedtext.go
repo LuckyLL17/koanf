@@ -4,7 +4,9 @@ package nestedtext
 import (
 	"bytes"
 	"errors"
+	"fmt"
 
+	"github.com/knadh/koanf/v2"
 	"github.com/npillmayer/nestext"
 	"github.com/npillmayer/nestext/ntenc"
 )
@@ -35,6 +37,15 @@ func (p *NT) Unmarshal(b []byte) (map[string]any, error) {
 		return nil, errors.New("NestedText configuration expected to be a dict at top-level")
 	}
 	return rmap, nil
+}
+
+// SupportsMultiDoc declares that a NestedText input always contains a
+// single document.
+func (p *NT) SupportsMultiDoc() bool { return false }
+
+// UnmarshalDocs is not supported by the NestedText parser.
+func (p *NT) UnmarshalDocs(b []byte) ([]koanf.DocFragment, error) {
+	return nil, fmt.Errorf("nestedtext: %w", koanf.ErrMultiDocNotSupported)
 }
 
 // Marshal marshals the given config map to NestedText bytes.

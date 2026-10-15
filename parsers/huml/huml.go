@@ -2,7 +2,10 @@
 package huml
 
 import (
+	"fmt"
+
 	"github.com/huml-lang/go-huml"
+	"github.com/knadh/koanf/v2"
 )
 
 // HUML implements a HUML parser.
@@ -21,6 +24,15 @@ func (p *HUML) Unmarshal(b []byte) (map[string]any, error) {
 		return nil, err
 	}
 	return result, nil
+}
+
+// SupportsMultiDoc declares that a HUML input always contains a single
+// document.
+func (p *HUML) SupportsMultiDoc() bool { return false }
+
+// UnmarshalDocs is not supported by the HUML parser.
+func (p *HUML) UnmarshalDocs(b []byte) ([]koanf.DocFragment, error) {
+	return nil, fmt.Errorf("huml: %w", koanf.ErrMultiDocNotSupported)
 }
 
 // Marshal marshals the given config map to HUML bytes.

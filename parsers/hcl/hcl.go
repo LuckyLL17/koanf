@@ -4,8 +4,10 @@ package hcl
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/hashicorp/hcl"
+	"github.com/knadh/koanf/v2"
 )
 
 // HCL implements a Hashicorp HCL parser.
@@ -34,6 +36,15 @@ func (p *HCL) Unmarshal(b []byte) (map[string]any, error) {
 		flattenHCL(out)
 	}
 	return out, nil
+}
+
+// SupportsMultiDoc declares that an HCL input always contains a single
+// document. HCL has no multi-document representation.
+func (p *HCL) SupportsMultiDoc() bool { return false }
+
+// UnmarshalDocs is not supported by the HCL parser.
+func (p *HCL) UnmarshalDocs(b []byte) ([]koanf.DocFragment, error) {
+	return nil, fmt.Errorf("hcl: %w", koanf.ErrMultiDocNotSupported)
 }
 
 // Marshal marshals the given config map to HCL bytes.
